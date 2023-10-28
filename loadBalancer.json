@@ -57,6 +57,14 @@
             }
         },
 
+        "WebserverSubnetRouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": { "Ref": "WebserverSubnet" },
+                "RouteTableId": { "Ref": "WebserverRouteTable" }
+            }
+        },
+
         "WebserverSecurityGroup": {
             "Type": "AWS::EC2::SecurityGroup",
             "Properties": {
