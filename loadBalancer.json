@@ -50,6 +50,7 @@
                 "CidrBlock": "10.0.1.0/24",
                 "VpcId": {"Ref": "WebserverVPC"},
                 "AvailabilityZone": "us-east-1a",
+                "MapPublicIpOnLaunch": true,
                 "Tags": [{
                     "Key": "Name",
                     "Value": "Webserver-subnet"
