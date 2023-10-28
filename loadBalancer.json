@@ -1,0 +1,175 @@
+{
+    "Resources": {
+        "WebserverVPC": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": "10.0.0.0/16",
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": "webserver-vpc"
+                }]
+            }
+        },
+
+        "WebserverInternetGateway": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties": {}
+        },
+
+        "WebserverAttachGateway": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "VpcId": {"Ref": "WebserverVPC"},
+                "InternetGatewayId": {"Ref": "WebserverInternetGateway"}
+            }
+        },
+
+        "WebserverRouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": "Webserver-route-table"
+                }],
+                "VpcId": {"Ref": "WebserverVPC"}
+            }
+        },
+
+        "WebserverRoute": {
+            "Type": "AWS::EC2::Route",
+            "Properties":{
+                "GatewayId": {"Ref": "WebserverInternetGateway"},
+                "RouteTableId": {"Ref": "WebserverRouteTable"},
+                "DestinationCidrBlock": "0.0.0.0/0"
+            }
+        },
+
+        "WebserverSubnet": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "CidrBlock": "10.0.1.0/24",
+                "VpcId": {"Ref": "WebserverVPC"},
+                "AvailabilityZone": "us-east-1a",
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": "Webserver-subnet"
+                }]
+            }
+        },
+
+        "WebserverSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Security Group Created by CloudFormation",
+                "GroupName": "webserver",
+                "VpcId": {"Ref": "WebserverVPC"},
+                "SecurityGroupIngress": [{
+                    "IpProtocol": "tcp",
+                    "FromPort": 80,
+                    "ToPort": 80,
+                    "CidrIp": "0.0.0.0/0"
+                    }, {
+                    "IpProtocol": "tcp",
+                    "FromPort": 22,
+                    "ToPort": 22,
+                    "CidrIp": "0.0.0.0/0"
+                }],
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": "Webserver-securitygroup"
+                }]
+            }
+        }, 
+
+        "WebserverInstance1": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "AdditionalInfo": "webserver-1",
+                "InstanceType": "t1.micro",
+                "ImageId": "ami-0fc5d935ebf8bc3bc",
+                "KeyName": "north-virginia-key",
+                "BlockDeviceMappings": [{
+                    "DeviceName": "/dev/sdb",
+                    "Ebs": {"VolumeSize": 10}
+                }, 
+                {
+                    "DeviceName": "/dev/sdc",
+                    "Ebs": {"VolumeSize": 5}
+                }],
+                "SecurityGroupIds": [{"Ref": "WebserverSecurityGroup"}],
+                "SubnetId": {"Ref": "WebserverSubnet"},
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": "webserver-1"   
+                }],
+                "UserData":{
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "", [
+                            "#!/bin/bash \n",
+                            "sudo apt update \n",
+                            "apt install apache2 -y \n",
+                            "echo '<h1>Server 1</h1>' > /var/www/html/index.html \n"
+                        ]
+                    ]}
+                }
+            }
+        },
+
+        "WebserverInstance2": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "AdditionalInfo": "webserver-1",
+                "InstanceType": "t1.micro",
+                "ImageId": "ami-0fc5d935ebf8bc3bc",
+                "KeyName": "north-virginia-key",
+                "BlockDeviceMappings": [{
+                    "DeviceName": "/dev/sdb",
+                    "Ebs": {"VolumeSize": 10}
+                }, 
+                {
+                    "DeviceName": "/dev/sdc",
+                    "Ebs": {"VolumeSize": 5}
+                }],
+                "SecurityGroupIds": [{"Ref": "WebserverSecurityGroup"}],
+                "SubnetId": {"Ref": "WebserverSubnet"},
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": "webserver-2"   
+                }],
+                "UserData":{
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "", [
+                            "#!/bin/bash \n",
+                            "sudo apt update \n",
+                            "apt install apache2 -y \n",
+                            "echo '<h1>Server 2</h1>' > /var/www/html/index.html \n"
+                        ]
+                    ]}
+                }
+            }
+        },
+
+        "WebserverLoadBalancer": {
+            "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+            "Properties": {
+                "Listeners": [{
+                    "InstancePort": "80",
+                    "Protocol": "http",
+                    "LoadBalancerPort": "80"
+                }],
+                "Instances": [
+                    {"Ref": "WebserverInstance1"}, 
+                    {"Ref": "WebserverInstance2"}
+                ],
+                "SecurityGroups": [{"Ref": "WebserverSecurityGroup"}],
+                "Subnets": [{"Ref": "WebserverSubnet"}],
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": "Webserver-load-balancer"
+                }]
+            }
+        }
+    }
+}
